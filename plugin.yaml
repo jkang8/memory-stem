@@ -1,0 +1,21 @@
+name: memory_stem
+kind: exclusive
+version: 0.2.0
+description: "Memory provider whose source of truth is one markdown note per memory in a folder you choose (VAULT_DIR, notes in Memory/). Hybrid keyword + local semantic search, supersede instead of duplicate, no auto-capture of chat."
+author: John Kang
+license: MIT
+requires_hermes: ">=0.21.4"
+provides_tools:
+  - ms_remember
+  - ms_search
+  - ms_forget
+  - ms_draft
+  - ms_review
+  - ms_verify
+provides_hooks: []
+provides_middleware: []
+requires_env:
+  - VAULT_DIR
+python_dependencies:
+  - "fastembed>=0.4,<1"   # local embeddings; without it recall silently falls back to keyword-only
+  - "numpy>=1.26,<3"
