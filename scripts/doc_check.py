@@ -1,87 +1,80 @@
-"""Fail if docs are over budget or name things that no longer exist. Run in CI and by scripts/gate.sh.
+#!/usr/bin/env python3
+# Vendored from github.com/jkang8/skills: skills/doc-writing/scripts/doc_check.py (branch agent/b2-1-checks, 8a1f132). Change it upstream.
+"""Fail on doc-writing violations in a repo: line budgets and stale backticked paths. Stdlib only.
 
-- Line budgets (BUDGETS): over budget means cut, not raise the cap.
-- Stale references: repo paths in code spans or fenced blocks, and `python -m memory_stem.<module>` anywhere,
-  must exist. A path counts as a repo path when its first folder is in the repo, or it is a bare .py/.sh name
-  (found at the root or next to the doc);
-  vault files, ~ and $ paths and globs are outside the repo and are skipped.
-usage: python scripts/doc_check.py [repo_dir]
+usage: doc_check.py <repo>
+A backticked path is checked when its first segment exists next to the doc or at the repo root, so
+`src/app.py` is checked in a repo with src/, while `web/src/api/` in a repo without web/ is taken as
+an example. Exits 1 with `path[:line]: problem` per hit.
 """
 from __future__ import annotations
 
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath
 
-BUDGETS = {"CLAUDE.md": 100, "AGENTS.md": 100, "README.md": 150, "CONTRIBUTING.md": 80, "docs/decisions/*.md": 15}
-
-SPAN = re.compile(r"`([^`\n]+)`")
-MODULE = re.compile(r"python3? -m memory_stem\.([\w.]+)")
-PATHLIKE = re.compile(r"^[\w.\-/]+$")
-CODE_EXT = (".py", ".sh")  # bare names with other extensions (Profile.md, tuned.json) are vault files
+# Pattern (matched from the right, like PurePath.match) -> max lines. First match wins.
+BUDGETS = {
+    "CLAUDE.md": 100,
+    "README.md": 150,
+    "docs/decisions/*.md": 15,
+}
+SKIP_DIRS = {"node_modules", ".git", "dist", "build", ".venv", "fixtures"}
+TICK = re.compile(r"`([^`\s]+)`")
+FENCE = re.compile(r"^\s*(```|~~~)")
+NOT_A_PATH = re.compile(r"[<>{}*$|()\[\]=@,;]|^-|^\w+://|^~|^/")
 
 
 def docs(root: Path) -> list[Path]:
-    return sorted(p for p in root.rglob("*.md") if not any(part.startswith((".", "__")) for part in p.relative_to(root).parts))
+    return sorted(p for p in root.rglob("*.md") if p.is_file() and not p.is_symlink()
+                  and not SKIP_DIRS & set(p.relative_to(root).parts))
 
 
-def over_budget(root: Path) -> list[str]:
-    out = []
-    for pattern, cap in BUDGETS.items():
-        for p in sorted(root.glob(pattern)):
-            n = len(p.read_text(encoding="utf-8").splitlines())
-            if n > cap:
-                out.append(f"{p.relative_to(root)}: {n} lines, budget {cap} (cut it; don't raise the cap)")
-    return out
+def budget(rel: PurePath) -> int | None:
+    return next((limit for pat, limit in BUDGETS.items() if rel.match(pat)), None)
 
 
-def _exists(root: Path, ref: str, here: Path) -> bool:
-    """A bare name may sit next to the doc that names it; a path is from the repo root."""
-    for base in (root, here) if "/" not in ref else (root,):
-        if (base / ref).exists():
-            return True
-        stem, _, _symbol = ref.rpartition(".")  # tests/helpers.FakeEmbedder -> tests/helpers.py
-        if stem and (base / (stem + ".py")).exists():
-            return True
-    return False
+def looks_like_path(tok: str) -> bool:
+    return "/" in tok and not NOT_A_PATH.search(tok)
 
 
-def _repo_path(root: Path, token: str) -> str | None:
-    """The token as a repo-relative path to check, or None when it isn't one (prose, flags, outside the repo)."""
-    t = token.strip(".,;:()[]'\"").removeprefix("./").removeprefix("memory_stem/")  # the repo is the memory_stem package
-    t = t.rstrip("/")
-    if not t or not PATHLIKE.match(t) or t.startswith(("-", ".")):
-        return None
-    if "/" in t:
-        return t if (root / t.split("/")[0]).exists() else None
-    return t if t.endswith(CODE_EXT) else None
-
-
-def stale(root: Path) -> list[str]:
-    out = []
-    for doc in docs(root):
-        name, fenced = doc.relative_to(root), False
-        for n, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
-            if line.lstrip().startswith("```"):
-                fenced = not fenced
-                continue
-            for mod in MODULE.findall(line):
-                if not ((root / (mod.replace(".", "/") + ".py")).exists() or (root / mod.replace(".", "/") / "__init__.py").exists()):
-                    out.append(f"{name}:{n}: `python -m memory_stem.{mod}` names no module")
-            code = line.split() if fenced else [w for span in SPAN.findall(line) for w in span.split()]
-            for token in dict.fromkeys(code):
-                ref = _repo_path(root, token)
-                if ref and not _exists(root, ref, doc.parent):
-                    out.append(f"{name}:{n}: `{ref}` does not exist")
-    return out
+def stale(tok: str, doc: Path, root: Path) -> bool:
+    tok = re.sub(r":\d+(-\d+)?$", "", tok)
+    first = PurePath(tok).parts[0]
+    if first == ".git":  # a file, not a folder, in worktrees; never tracked content
+        return False
+    bases = [b for b in (doc.parent, root) if (b / first).exists() or first in (".", "..")]
+    return bool(bases) and not any((b / tok).exists() for b in bases)
 
 
 def check(root: Path) -> list[str]:
-    return over_budget(root) + stale(root)
+    hits = []
+    for doc in docs(root):
+        rel = doc.relative_to(root)
+        lines = doc.read_text(encoding="utf-8").splitlines()
+        limit = budget(rel)
+        if limit is not None and len(lines) > limit:
+            hits.append(f"{rel.as_posix()}: {len(lines)} lines, budget {limit}")
+        fenced = False
+        for n, line in enumerate(lines, 1):
+            if FENCE.match(line):
+                fenced = not fenced
+                continue
+            if fenced:
+                continue
+            hits += [f"{rel.as_posix()}:{n}: stale path `{t}`" for t in TICK.findall(line)
+                     if looks_like_path(t) and stale(t, doc, root)]
+    return hits
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 1:
+        print(__doc__)
+        return 2
+    hits = check(Path(argv[0]).resolve())
+    print("\n".join(hits) or "doc check: clean")
+    return 1 if hits else 0
 
 
 if __name__ == "__main__":
-    root = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent.parent).resolve()
-    hits = check(root)
-    print("\n".join(hits) or "doc check: clean")
-    sys.exit(1 if hits else 0)
+    sys.exit(main(sys.argv[1:]))

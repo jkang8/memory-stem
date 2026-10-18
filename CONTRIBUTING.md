@@ -1,7 +1,7 @@
 # Contributing
 
 - **One change per PR.** A fix, a feature or a refactor, not several. Small PRs get reviewed; big ones get skimmed.
-- **Tests first.** Add a test that fails without the change, then make it pass. Unit tests use `tests/helpers.FakeEmbedder`, never the real vault.
+- **Tests first.** Add a test that fails without the change, then make it pass. Unit tests use the fake embedder in `tests/helpers.py`, never the real vault.
 - **Run the gate** from your checkout and paste its full output in the PR:
 
   ```sh
