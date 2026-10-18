@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from . import aliases as _aliases
+from .config import Settings
 from .embedder import Embedder
 from .index import Index
 
@@ -22,6 +23,12 @@ class Searcher:
         self.index, self.embedder, self.rrf_k, self.rel_margin = index, embedder, rrf_k, rel_margin
         self.min_cosine, self.strong_cosine, self.vault_penalty = min_cosine, strong_cosine, vault_penalty
         self.aliases = aliases or {}
+
+    @classmethod
+    def from_settings(cls, s: Settings, index: Index, embedder: Embedder) -> Searcher:
+        """The configured searcher. The provider and the evals both build it here, so the evals score what runs live."""
+        return cls(index, embedder, s.min_cosine, strong_cosine=s.strong_cosine, rel_margin=s.rel_margin,
+                   vault_penalty=s.vault_penalty, aliases=_aliases.load(s.notes_dir))
 
     def _penalty(self, note_id: str) -> float:
         return self.vault_penalty if ":" in note_id else 0.0  # vault ids are 'vault:<path>'; curated memories win ties

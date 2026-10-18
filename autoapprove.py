@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import replace
 
 from . import checks
 from .config import load_settings
-from .notes import CURRENT, NoteStore
+from .notes import NoteStore
 
 LOG = "autoapprove_log.jsonl"  # one line per approval, for reverts and audit
 
@@ -25,7 +24,7 @@ def revert(store: NoteStore, note_id: str) -> str:
     store.forget(n.id)
     old = store.get(n.supersedes) if n.supersedes else None
     if old is not None and old.superseded_by == n.id:
-        store._write(replace(old, status=CURRENT, superseded_by=""))
+        store.restore(old.id)
         return f"reverted {n.title}; restored {old.title}"
     return f"reverted {n.title}"
 

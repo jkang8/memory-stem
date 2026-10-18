@@ -165,6 +165,16 @@ class NoteStore:
         self._write(n)
         return n
 
+    def restore(self, note_id: str) -> Note:
+        """Make a superseded or forgotten note current again. Retire its replacement first (as autoapprove.revert
+        does), or reconcile() supersedes it again on the next refresh."""
+        n = self.get(note_id)
+        if n is None:
+            raise KeyError(f"no memory with id {note_id}")
+        n = replace(n, status=CURRENT, superseded_by="")
+        self._write(n)
+        return n
+
     def verify(self, note_id: str, day: str = "") -> Note:
         """Stamp a current note as confirmed true today. Changes no content."""
         n = self.get(note_id)
@@ -173,12 +183,6 @@ class NoteStore:
         n = replace(n, verified=day or dt.date.today().isoformat())
         self._write(n)
         return n
-
-    def set_questions(self, note_id: str, questions) -> None:
-        n = self.get(note_id)
-        if n is None:
-            raise KeyError(f"no memory with id {note_id}")
-        self._write(replace(n, questions=tuple(questions)))
 
     def reconcile(self) -> int:
         """Finish supersedes links made outside add() (a draft moved into Memory/, or a hand edit): retire the older note."""

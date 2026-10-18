@@ -8,14 +8,15 @@ from typing import Any, Optional
 
 from agent.memory_provider import MemoryProvider, RecallStatus, is_trivial_prompt
 
-from . import aliases, catalog, replay, timewindow, usage
+from . import catalog, replay, timewindow, usage
 from .config import ConfigError, Settings, load_settings
 from .embedder import make_embedder
 from .index import Index
 from .notes import NoteStore
 from .search import Searcher
+from .sources import Recall
 from .tools import SCHEMAS, Tools
-from .recall import MAX_ITEMS, Recall, status_label, contentless, habituate, profile, seen_path, upcoming, when
+from .recall import MAX_ITEMS, status_label, contentless, habituate, profile, seen_path, upcoming, when
 
 log = logging.getLogger(__name__)
 
@@ -73,8 +74,7 @@ class VaultMemoryProvider(MemoryProvider):
         self.recall = Recall(self.store, s.vault_dir)
         embedder = make_embedder(s.model_name, s.model_cache)
         self.index = Index(s.index_path, embedder)
-        self.searcher = Searcher(self.index, embedder, s.min_cosine, strong_cosine=s.strong_cosine, rel_margin=s.rel_margin, vault_penalty=s.vault_penalty,
-                                 aliases=aliases.load(s.notes_dir))
+        self.searcher = Searcher.from_settings(s, self.index, embedder)
         primary = self._primary = kwargs.get("agent_context") in (None, "primary")  # subagents and cron only read
         self._tools = Tools(self.store, self.searcher, self._refresh, writable=primary, reader=self.recall)
         self._refresh()
