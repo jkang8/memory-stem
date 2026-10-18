@@ -9,7 +9,6 @@ from __future__ import annotations
 import importlib.util
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -17,11 +16,18 @@ EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 ALLOWED_EMAIL = re.compile(r"(noreply|example\.(com|org)|users\.noreply\.github\.com)", re.I)
 
 
+SKIP_DIRS = {".git", "__pycache__", ".venv", "venv", "node_modules", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".tox"}
+
+
 def files(root: Path) -> list[Path]:
-    """Tracked plus untracked-but-not-ignored, so a new file is checked before it is committed."""
-    out = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
-                         capture_output=True, text=True).stdout.split("\0")
-    return [root / f for f in dict.fromkeys(out) if f and not f.endswith((".png", ".jpg", ".sqlite"))]
+    """Every file under root except caches, VCS and virtualenv folders, compiled files and binaries, so a new file is
+    checked before it is committed. Walks the tree itself: no git needed, and nothing is executed."""
+    out = []
+    for folder, dirs, names in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        # in a worktree `.git` is a file (it holds an absolute path), so names are checked against SKIP_DIRS too
+        out += [Path(folder) / n for n in sorted(names) if n not in SKIP_DIRS and not n.endswith((".png", ".jpg", ".sqlite", ".pyc"))]
+    return out
 
 
 def denylist() -> list[str]:

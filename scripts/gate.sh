@@ -7,9 +7,8 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${1:-origin/main}"
 PY="$(ls -d "$HOME"/.hermes/tools/python-*/bin/python3 | head -1)"
 UV="$(command -v uv || ls "$HOME"/.hermes/tools/uv-*/uv 2>/dev/null | head -1)"
-# the vault path is personal: take it from Hermes's .env, never hard-code it here
-[ -n "${VAULT_DIR:-}" ] || VAULT_DIR="$(sed -n 's/^VAULT_DIR=//p' "$HOME/.hermes/.env" 2>/dev/null | tail -1 | tr -d "\"'")"
-[ -n "$VAULT_DIR" ] || { echo "GATE FAIL: set VAULT_DIR (or VAULT_DIR= in ~/.hermes/.env)"; exit 1; }
+# the vault path is personal: it comes from the environment, never from this repo
+[ -n "${VAULT_DIR:-}" ] || { echo "GATE FAIL: export VAULT_DIR=<your notes folder> first (the recall evals run against it)"; exit 1; }
 export VAULT_DIR MEMORY_STEM_DENYLIST="${MEMORY_STEM_DENYLIST:-$HOME/.hermes/memory-stem-dev/denylist.txt}"
 run() { # $1 = dir containing a memory_stem package; rest = command
   d="$1"; shift
