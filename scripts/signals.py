@@ -2,6 +2,7 @@
 
 Both private locations are arguments, never defaults: --vault (notes and eval sets) and --hermes-home (runtime data).
 The tuned section quotes eval questions, so the output is for reading locally. Heldout shows counts only: it is frozen.
+It reads only local files under those two paths. It never fetches PR or issue text, which anyone can write on a public repo.
 """
 from __future__ import annotations
 
