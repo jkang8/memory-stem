@@ -31,13 +31,6 @@ class QuestionsTest(unittest.TestCase):
         idx.sync(self.store.all())
         self.assertEqual([h.id for h in Searcher(idx, e, 0.5).search("lodging", 3)], [a.id])
 
-    def test_set_questions_updates_existing_note(self):
-        n = self.store.add("Likes tea.", title="tea")
-        self.store.set_questions(n.id, ["What does Sam drink?"])
-        self.assertEqual(self.store.get(n.id).questions, ("What does Sam drink?",))
-        with self.assertRaises(KeyError):
-            self.store.set_questions("nope", [])
-
     def test_tools_accept_questions(self):
         e = Embedder()
         idx = Index(Path(self.tmp.name) / "i.sqlite", e)

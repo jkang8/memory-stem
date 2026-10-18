@@ -174,12 +174,6 @@ class NoteStore:
         self._write(n)
         return n
 
-    def set_questions(self, note_id: str, questions) -> None:
-        n = self.get(note_id)
-        if n is None:
-            raise KeyError(f"no memory with id {note_id}")
-        self._write(replace(n, questions=tuple(questions)))
-
     def reconcile(self) -> int:
         """Finish supersedes links made outside add() (a draft moved into Memory/, or a hand edit): retire the older note."""
         notes = {n.id: n for n in self.all()}

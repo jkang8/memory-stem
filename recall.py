@@ -86,10 +86,6 @@ class Recall:
         self.store = store
         self.sources = [FolderSource("vault", vault)]
 
-    @property
-    def excluded(self) -> list[str]:
-        return [e for s in self.sources for e in s.excluded]
-
     def vault_notes(self) -> list[Note]:
         return [n for s in self.sources for n in s.notes()]
 
