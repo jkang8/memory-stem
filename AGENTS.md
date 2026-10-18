@@ -21,15 +21,12 @@ The repo root is the `memory_stem` package. Layers, lowest first (each module's 
 Run from the folder that contains the package (`memory_stem` must be importable by that name):
 
 ```sh
-uv run --no-project --with fastembed --with numpy \
-  python -m unittest discover -s memory_stem/tests -t .    # unit tests: "OK" at the end
-memory_stem/scripts/gate.sh                               # tests, privacy guard, recall evals vs origin/main
+python -m unittest discover -s memory_stem/tests -t .    # unit tests, need numpy only; "OK" at the end
+export VAULT_DIR=<your notes folder>                     # the gate and the evals read the real vault
+memory_stem/scripts/gate.sh                              # tests, privacy guard, doc check, ruff, pyright, recall evals vs origin/main
 ```
 
-Recall evals run against the real vault, so they need `VAULT_DIR`. Use the same `uv run` prefix:
-`python -m memory_stem.evaluate` prints `recall: 19/19`-style counts for the tuned set.
-
-`scripts/gate.sh` ends with `GATE PASS` or names what failed. Paste its full output in every PR.
+`scripts/gate.sh` installs what it needs (fastembed, numpy, ruff, pyright) in a throwaway environment and ends with `GATE PASS` or names what failed. Paste its full output in every PR. `python -m memory_stem.evaluate` prints the tuned recall counts directly (needs `VAULT_DIR`, fastembed and numpy).
 
 ## Hard rules
 

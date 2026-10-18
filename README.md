@@ -9,20 +9,12 @@ Each memory is one note in a folder you choose. Before every turn, Memory Stem r
 ```sh
 hermes plugins install https://github.com/jkang8/memory-stem
 hermes pm install
+hermes memory setup
 ```
 
-In `~/.hermes/config.yaml`:
+The plugin install asks for `VAULT_DIR`, the folder of markdown notes. If you skip it, set `VAULT_DIR` in the environment Hermes runs in. In `hermes memory setup`, choose `memory_stem` (or set `memory.provider` to `memory_stem` in your Hermes config).
 
-```yaml
-memory:
-  provider: memory_stem
-```
-
-In `~/.hermes/.env`:
-
-```sh
-VAULT_DIR=/path/to/notes
-```
+The first time it starts, Memory Stem downloads a small embedding model (`BAAI/bge-small-en-v1.5`, about 64 MB) from Hugging Face into Hermes's cache folder. After that, indexing and search run locally and Memory Stem makes no other network calls. If the download fails, search falls back to keywords only.
 
 ## Configuration
 
