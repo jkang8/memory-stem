@@ -22,7 +22,7 @@ print(v)' "$1" "$2"; }
 
 mkdir -p "$RUNS" "$WTS"
 mkdir "$RUNS/.lock" 2>/dev/null || { say "another run is active, skipped"; exit 0; }
-STAMP="$(date +%Y%m%d-%H%M%S)"; RUN="$RUNS/$STAMP"; BR="prune-docs/$STAMP"; WT="$WTS/prune-$STAMP"
+STAMP="$(date +%Y%m%d-%H%M%S)"; RUN="$RUNS/$STAMP"; BR="prune/$STAMP"; WT="$WTS/prune-$STAMP"
 cleanup() {
   [ -d "$WT" ] && git -C "$REPO" worktree remove --force "$WT" 2>/dev/null
   git -C "$REPO" branch -D "$BR" >/dev/null 2>&1
@@ -33,7 +33,7 @@ trap 'exit 1' INT TERM
 mkdir -p "$RUN"
 ls -dt "$RUNS"/2* 2>/dev/null | tail -n +13 | while read -r old; do rm -rf "$old"; done  # keep the last 12 runs
 
-open="$(gh pr list --repo "$GH_REPO" --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("prune-docs/"))] | length')" \
+open="$(gh pr list --repo "$GH_REPO" --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("prune/"))] | length')" \
   || { say "can't list PRs (gh), skipped"; exit 1; }
 [ "$open" = 0 ] || { say "a pruning PR is already open, skipped"; exit 0; }
 
