@@ -1,6 +1,7 @@
 """Where recalled notes come from: the Memory notes plus a read-only view of the rest of the vault, so recall
 covers notes outside Memory/.
-Credentials are excluded by filename, by content, or by `private: true` frontmatter. Nothing here writes; Recall only reads its NoteStore."""
+Credentials are excluded by filename, by content, or by `private: true` frontmatter; index pages, dashboards and
+ID dumps are skipped as scaffolding. Nothing here writes; Recall only reads its NoteStore."""
 from __future__ import annotations
 
 import datetime as dt
@@ -30,6 +31,32 @@ def sensitive(name: str, text: str) -> bool:
     return False
 
 
+_LINK = re.compile(r"!?\[\[[^\]]+\]\]|\[[^\]]*\]\([^)]+\)|https?://\S+")
+_QUERY_BLOCK = re.compile(r"```(?:dataview|dataviewjs|tasks|query)\b.*?```", re.S | re.I)
+_INLINE_QUERY = re.compile(r"`\$?=[^`]*`")  # Dataview inline expressions: `= this.file.name`
+_SENTENCE = re.compile(r"[A-Za-z]{3,}\W+[A-Za-z]{3,}\W+[A-Za-z]{3,}\W+[A-Za-z]{3,}")
+_ID_LIKE = re.compile(r"(?=[\w-]*\d)(?=[\w-]*[A-Za-z])[\w-]{8,}")
+
+
+def scaffolding(body: str) -> bool:
+    """Index pages, query dashboards and ID dumps. They have no prose for a question to match, so any search that
+    reaches them is noise. Measured 2026-10-18: drops 25 of 443 vault notes."""
+    lines = [ln for ln in body.splitlines() if ln.strip()]
+    link_only = sum(1 for ln in lines if _LINK.search(ln) and len(_LINK.sub("", ln).strip(" -*>|#.:0123456789")) < 25)
+    if len(lines) >= 3 and link_only / len(lines) >= 0.7:
+        return True
+    if _QUERY_BLOCK.search(body) and not _has_prose(_INLINE_QUERY.sub("", _QUERY_BLOCK.sub("", body))):  # a dashboard: queries, links and callouts
+        return True
+    tokens = body.split()
+    return bool(tokens) and sum(1 for t in tokens if _ID_LIKE.fullmatch(t)) / len(tokens) >= 0.5
+
+
+def _has_prose(text: str) -> bool:
+    """At least one line that reads as a sentence once links and list, quote and heading marks are removed."""
+    return any(len(t) >= 40 and _SENTENCE.search(t)
+               for t in (_LINK.sub("", ln).strip(" -*>#|") for ln in text.splitlines()))
+
+
 class FolderSource:
     """A read-only folder of markdown notes. Ids are '<name>:<relative path>'."""
 
@@ -56,7 +83,7 @@ class FolderSource:
                 continue
             m = _FM.match(text)
             body = (text[m.end():] if m else text).strip()
-            if len(body) < 30:
+            if len(body) < 30 or scaffolding(body):  # not in `excluded`: that list audits the secret filter
                 continue
             out.append(Note(id=f"{self.name}:{rel}", title=p.stem, body=body, created=dt.date.fromtimestamp(mtime).isoformat(),
                             source=self.name, path=p, mtime=mtime))
