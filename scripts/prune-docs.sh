@@ -44,7 +44,8 @@ git -C "$REPO" worktree add -q -b "$BR" "$WT" $BASE || { say "worktree failed"; 
 # file tools only, confined to the worktree and the run folder: this job never needs to run anything
 (cd "$WT" && PRUNE_RUN="$RUN" perl -e 'alarm shift; exec @ARGV' "$LIMIT" \
   claude -p --model opus --output-format json --no-session-persistence --restricted --tools "Read,Edit,Write,Glob,Grep" \
-    --permission-mode acceptEdits --add-dir "$RUN" "$(cat "$WT/scripts/prune-docs.md")" > "$RUN/claude.json" 2> "$RUN/claude.err") 2>/dev/null
+    --permission-mode acceptEdits --add-dir "$RUN" < "$WT/scripts/prune-docs.md" > "$RUN/claude.json" 2> "$RUN/claude.err") 2>/dev/null
+# (prompt on stdin: --add-dir takes several values and would swallow a prompt argument)
 rc=$?
 status="$(json "$RUN/result.json" status)"
 [ "$rc" = 142 ] && { say "no PR: timed out after ${LIMIT}s [logs: $RUN]"; exit 1; }
