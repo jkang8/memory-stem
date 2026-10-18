@@ -46,6 +46,7 @@ class VaultMemoryProvider(MemoryProvider):
         self._fp = None
         self._status: Optional[RecallStatus] = None
         self._tools: Tools | None = None
+        self._primary = True
 
     # -- identity / availability ---------------------------------------------
     @property
@@ -74,7 +75,7 @@ class VaultMemoryProvider(MemoryProvider):
         self.index = Index(s.index_path, embedder)
         self.searcher = Searcher(self.index, embedder, s.min_cosine, strong_cosine=s.strong_cosine, rel_margin=s.rel_margin, vault_penalty=s.vault_penalty,
                                  aliases=aliases.load(s.notes_dir))
-        primary = kwargs.get("agent_context") in (None, "primary")  # subagents and cron only read
+        primary = self._primary = kwargs.get("agent_context") in (None, "primary")  # subagents and cron only read
         self._tools = Tools(self.store, self.searcher, self._refresh, writable=primary, reader=self.recall)
         self._refresh()
 
@@ -184,7 +185,7 @@ class VaultMemoryProvider(MemoryProvider):
         """Recall missed if I had to ms_search and found a memory recall didn't inject. Log the user's wording
         against that memory so the nightly replay can teach it (shortcut: pairs with the last message only)."""
         q, recalled = getattr(self, "_last_query", ""), getattr(self, "_last_recalled", set())
-        if not q or contentless(q):
+        if not self._primary or not q or contentless(q):  # a cron prompt or subagent task is not the user's wording
             return
         try:
             res = json.loads(out).get("results") or []
