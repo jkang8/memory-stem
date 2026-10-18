@@ -1,7 +1,7 @@
 #!/bin/sh
 # Quality gate for a Memory Stem change. Run from a checkout (worktree) of the repo; exits non-zero on any failure.
 #   scripts/gate.sh [baseline_ref]      baseline defaults to origin/main
-# 1. unit tests  2. privacy guard and doc check  3. real-vault recall evals vs the baseline (local only: evals quote the owner's life).
+# 1. unit tests  2. privacy guard, doc check, ruff and pyright  3. real-vault recall evals vs the baseline (local only: evals quote the owner's life).
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${1:-origin/main}"
@@ -30,6 +30,10 @@ echo "== privacy guard"
 
 echo "== doc check"
 "$PY" "$REPO/scripts/doc_check.py" "$REPO" || { echo "GATE FAIL: docs"; exit 1; }
+
+echo "== lint and types"
+(cd "$WORK/new" && "$UV" run -q --offline --no-project --python "$PY" --with-requirements memory_stem/requirements-dev.txt \
+  sh -c 'ruff check memory_stem && pyright -p memory_stem') || { echo "GATE FAIL: lint/types"; exit 1; }
 
 score() { # $1 dir, $2 flag -> prints "right total junk"
   run "$1" python -W ignore -c "
