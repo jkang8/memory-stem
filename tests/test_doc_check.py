@@ -6,6 +6,7 @@ from pathlib import Path
 
 # scripts/ is not a package: load the checker by path
 _spec = importlib.util.spec_from_file_location("doc_check", Path(__file__).parent.parent / "scripts" / "doc_check.py")
+assert _spec is not None and _spec.loader is not None
 doc_check = sys.modules["doc_check"] = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(doc_check)
 

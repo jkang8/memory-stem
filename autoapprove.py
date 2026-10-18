@@ -48,7 +48,7 @@ def run(evaluate=None) -> str:
         inbox.move_to(d.id, store)
         approved.append(d)
     store.reconcile()
-    if approved and before is not None:
+    if approved and evaluate is not None and before is not None:
         after = evaluate()
         if after < before:
             for d in approved:

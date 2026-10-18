@@ -38,11 +38,14 @@ class Settings:
 def load_settings(hermes_home: str | os.PathLike | None = None) -> Settings:
     home = Path(hermes_home or os.environ.get("HERMES_HOME") or Path.home() / ".hermes")
     vault, notes = os.environ.get("VAULT_DIR"), os.environ.get("VAULT_MEMORY_DIR")
-    if not (vault or notes):  # no default: guessing a path could read or write the wrong folder
+    if notes:
+        notes_dir = Path(notes).expanduser()
+    elif vault:
+        notes_dir = Path(vault).expanduser() / "Memory"
+    else:  # no default: guessing a path could read or write the wrong folder
         raise ConfigError("set VAULT_DIR to your notes folder (memories go in $VAULT_DIR/Memory, or set VAULT_MEMORY_DIR)")
-    notes = Path(notes).expanduser() if notes else Path(vault).expanduser() / "Memory"
     return Settings(
-        notes_dir=notes,
+        notes_dir=notes_dir,
         index_path=home / "vault_memory" / "index.sqlite",  # data dir keeps its old name
         model_cache=home / "cache" / "fastembed",
     )

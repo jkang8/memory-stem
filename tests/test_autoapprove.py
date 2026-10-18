@@ -18,7 +18,8 @@ class AutoApproveTest(unittest.TestCase):
         self.store, self.inbox = NoteStore(self.mem), NoteStore(self.mem / "_inbox")
 
     def tearDown(self):
-        os.environ.pop("VAULT_MEMORY_DIR"), os.environ.pop("HERMES_HOME")
+        os.environ.pop("VAULT_MEMORY_DIR")
+        os.environ.pop("HERMES_HOME")
 
     def test_safe_drafts_are_approved_and_logged(self):
         old = self.store.add(DESIGN, title="design")

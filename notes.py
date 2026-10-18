@@ -194,26 +194,34 @@ class NoteStore:
                 fixed += 1
         return fixed
 
-    def move_to(self, note_id: str, dest: "NoteStore") -> Path:
+    def move_to(self, note_id: str, dest: NoteStore) -> Path:
         n = self.get(note_id)
         if n is None:
             raise KeyError(f"no memory with id {note_id}")
         dest.root.mkdir(parents=True, exist_ok=True)
-        path = dest.root / n.path.name
+        src = self._file(n)
+        path = dest.root / src.name
         if path.exists():
-            path = dest.root / f"{n.path.stem} {n.id[-4:]}.md"
-        os.replace(n.path, path)
+            path = dest.root / f"{src.stem} {n.id[-4:]}.md"
+        os.replace(src, path)
         return path
 
     def discard(self, note_id: str) -> Note:
         n = self.get(note_id)
         if n is None:
             raise KeyError(f"no memory with id {note_id}")
-        n.path.unlink()
+        self._file(n).unlink()
         return n
 
     @staticmethod
-    def _write(n: Note) -> None:
-        tmp = n.path.with_suffix(".tmp")
+    def _file(n: Note) -> Path:
+        if n.path is None:  # notes a store reads or writes always have one
+            raise ValueError(f"memory {n.id} has no file")
+        return n.path
+
+    @classmethod
+    def _write(cls, n: Note) -> None:
+        path = cls._file(n)
+        tmp = path.with_suffix(".tmp")
         tmp.write_text(render(n), encoding="utf-8")
-        os.replace(tmp, n.path)
+        os.replace(tmp, path)

@@ -15,6 +15,7 @@ class NotesTest(unittest.TestCase):
 
     def test_roundtrip(self):
         n = self.store.add("Hotel is Harbor Inn.", title="Boston hotel", tags=("travel",))
+        assert n.path is not None
         back = parse(render(n), n.path)
         self.assertEqual((back.id, back.body, back.status), (n.id, "Hotel is Harbor Inn.", CURRENT))
         self.assertIn("travel", back.tags)

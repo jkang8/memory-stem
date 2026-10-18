@@ -20,6 +20,7 @@ class QuestionsTest(unittest.TestCase):
 
     def test_roundtrip_with_colons_and_quotes(self):
         n = self.store.add("Hotel is Harbor Inn.", title="trip", questions=('Where am I staying: which hotel?', 'What\'s my "hotel"?'))
+        assert n.path is not None
         back = parse(render(n), n.path)
         self.assertEqual(back.questions, ("Where am I staying: which hotel?", "What's my 'hotel'?"))
         self.assertEqual(back.tags, ("memory",))

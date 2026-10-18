@@ -19,6 +19,7 @@ from .notes import NoteStore
 from .search import Searcher
 from .sources import Recall
 
+
 def _evals(name: str):
     return load_settings().evals_dir / name
 
@@ -43,7 +44,7 @@ def log_miss(question: str, must: str) -> None:
     rows = logged()
     if (question, must) not in rows:
         _evals("misses.json").parent.mkdir(parents=True, exist_ok=True)
-        _evals("misses.json").write_text(json.dumps(rows + [(question, must)], indent=1))
+        _evals("misses.json").write_text(json.dumps([*rows, (question, must)], indent=1))
 
 
 def _scratch_index(s, emb) -> Index:
@@ -78,7 +79,7 @@ def run(verbose: bool = True) -> dict:
     s, _, rec, sr = _bench()
     right, sizes, misses = 0, [], []
     for q, must in cases:
-        bodies = [rec.get(h.id).body for h in sr.search(q, s.top_k)]
+        bodies = [n.body for h in sr.search(q, s.top_k) if (n := rec.get(h.id))]
         sizes.append(len(bodies))
         if any(must.lower() in b.lower() for b in bodies):
             right += 1
@@ -103,7 +104,7 @@ def run_heldout(name: str = "heldout.json") -> dict:
     right, miss = 0, []
     live_cases = [(q, m) for q, m in data["cases"] if m not in bad]  # retired: the fact changed, so the case no longer has an answer
     for q, must in live_cases:
-        if any(must.lower() in rec.get(h.id).body.lower() for h in sr.search(q, s.top_k)):
+        if any((n := rec.get(h.id)) and must.lower() in n.body.lower() for h in sr.search(q, s.top_k)):
             right += 1
         else:
             miss.append(q)
