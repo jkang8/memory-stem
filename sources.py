@@ -1,6 +1,6 @@
 """Where recalled notes come from: the Memory notes plus a read-only view of the rest of the vault, so recall
 covers notes outside Memory/.
-Credentials are excluded by filename, by content, or by `private: true` frontmatter. Nothing here writes."""
+Credentials are excluded by filename, by content, or by `private: true` frontmatter. Nothing here writes; Recall only reads its NoteStore."""
 from __future__ import annotations
 
 import datetime as dt
@@ -72,6 +72,11 @@ class Recall:
 
     def __init__(self, store: NoteStore, vault: Path):
         self.store, self.vault = store, FolderSource("vault", vault)
+
+    @property
+    def excluded(self) -> list[str]:
+        """Vault notes the secret filter dropped on the last read. The maintenance skill prints this."""
+        return self.vault.excluded
 
     def all(self) -> list[Note]:
         return self.store.all() + self.vault.notes()

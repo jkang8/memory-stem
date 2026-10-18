@@ -166,7 +166,8 @@ class NoteStore:
         return n
 
     def restore(self, note_id: str) -> Note:
-        """Make a superseded or forgotten note current again (undoing a bad replacement)."""
+        """Make a superseded or forgotten note current again. Retire its replacement first (as autoapprove.revert
+        does), or reconcile() supersedes it again on the next refresh."""
         n = self.get(note_id)
         if n is None:
             raise KeyError(f"no memory with id {note_id}")

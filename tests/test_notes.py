@@ -37,8 +37,10 @@ class NotesTest(unittest.TestCase):
 
     def test_restore_makes_a_superseded_note_current_again(self):
         old = self.store.add("Return is Oct 25.", title="Boston return")
-        self.store.add("Return is Oct 24.", title="Boston return fixed", supersedes=old.id)
+        new = self.store.add("Return is Oct 24.", title="Boston return fixed", supersedes=old.id)
+        self.store.forget(new.id)
         self.store.restore(old.id)
+        self.assertEqual(self.store.reconcile(), 0)  # stable: nothing supersedes it again
         o = self.store.get(old.id)
         self.assertEqual((o.status, o.superseded_by), (CURRENT, ""))
         with self.assertRaises(KeyError):
