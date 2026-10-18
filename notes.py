@@ -165,6 +165,15 @@ class NoteStore:
         self._write(n)
         return n
 
+    def restore(self, note_id: str) -> Note:
+        """Make a superseded or forgotten note current again (undoing a bad replacement)."""
+        n = self.get(note_id)
+        if n is None:
+            raise KeyError(f"no memory with id {note_id}")
+        n = replace(n, status=CURRENT, superseded_by="")
+        self._write(n)
+        return n
+
     def verify(self, note_id: str, day: str = "") -> Note:
         """Stamp a current note as confirmed true today. Changes no content."""
         n = self.get(note_id)
