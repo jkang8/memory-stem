@@ -1,14 +1,11 @@
-"""What gets recalled each turn, independent of Hermes: the always-on profile, upcoming events, the
-contentless-reply skip, and Recall (Memory notes plus the read-only rest of the vault behind one interface)."""
+"""The rules for what gets recalled each turn, independent of Hermes: the always-on profile, upcoming events,
+the contentless-reply skip and the recall status label."""
 from __future__ import annotations
 
 import datetime as dt
 import re
-from pathlib import Path
 
 from .config import Settings, load_settings
-from .notes import Note, NoteStore
-from .sources import FolderSource
 
 PROFILE = "Profile.md"  # no `id` in its frontmatter, so NoteStore never treats it as a memory
 _FILLER = frozenset("""a an the and or but so to it its this that these those do does did is are be been i im i'm you we us me my
@@ -77,28 +74,6 @@ def profile(s: Settings | None, cap: int = 2500) -> str:
     body = re.sub(r"\A---\r?\n.*?\r?\n---\r?\n?", "", text, flags=re.S)
     body = "\n".join(ln for ln in body.splitlines() if ln.lstrip().startswith("-")).strip()
     return f"\nUser profile (always true unless they say otherwise):\n{body[:cap]}" if body else ""
-
-
-class Recall:
-    """Memory notes plus the read-only vault, behind the same all()/get()/fingerprint() as NoteStore."""
-
-    def __init__(self, store: NoteStore, vault: Path):
-        self.store = store
-        self.sources = [FolderSource("vault", vault)]
-
-    def vault_notes(self) -> list[Note]:
-        return [n for s in self.sources for n in s.notes()]
-
-    def all(self) -> list[Note]:
-        return self.store.all() + self.vault_notes()
-
-    def get(self, note_id: str) -> Note | None:
-        if ":" not in note_id:
-            return self.store.get(note_id)
-        return next((n for n in self.vault_notes() if n.id == note_id), None)
-
-    def fingerprint(self):
-        return (self.store.fingerprint(), *(s.fingerprint() for s in self.sources))
 
 
 def status_label(titles: list[str], show: int = 2, width: int = 30) -> str:

@@ -1,4 +1,5 @@
-"""Read-only view of the rest of the vault, so recall covers notes outside Memory/.
+"""Where recalled notes come from: the Memory notes plus a read-only view of the rest of the vault, so recall
+covers notes outside Memory/.
 Credentials are excluded by filename, by content, or by `private: true` frontmatter. Nothing here writes."""
 from __future__ import annotations
 
@@ -64,3 +65,21 @@ class FolderSource:
     def fingerprint(self):
         stats = [p.stat() for p, _ in self._files()]
         return len(stats), max((s.st_mtime_ns for s in stats), default=0)
+
+
+class Recall:
+    """Memory notes plus the read-only vault, behind the same all()/get()/fingerprint() as NoteStore."""
+
+    def __init__(self, store: NoteStore, vault: Path):
+        self.store, self.vault = store, FolderSource("vault", vault)
+
+    def all(self) -> list[Note]:
+        return self.store.all() + self.vault.notes()
+
+    def get(self, note_id: str) -> Note | None:
+        if ":" not in note_id:
+            return self.store.get(note_id)
+        return next((n for n in self.vault.notes() if n.id == note_id), None)
+
+    def fingerprint(self):
+        return self.store.fingerprint(), self.vault.fingerprint()

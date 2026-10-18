@@ -14,8 +14,9 @@ from .embedder import make_embedder
 from .index import Index
 from .notes import NoteStore
 from .search import Searcher
+from .sources import Recall
 from .tools import SCHEMAS, Tools
-from .recall import MAX_ITEMS, Recall, status_label, contentless, habituate, profile, seen_path, upcoming, when
+from .recall import MAX_ITEMS, status_label, contentless, habituate, profile, seen_path, upcoming, when
 
 log = logging.getLogger(__name__)
 

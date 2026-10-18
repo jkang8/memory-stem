@@ -17,7 +17,7 @@ from .embedder import make_embedder
 from .index import Index
 from .notes import NoteStore
 from .search import Searcher
-from .recall import Recall
+from .sources import Recall
 
 def _evals(name: str):
     return load_settings().evals_dir / name
