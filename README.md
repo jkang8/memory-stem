@@ -2,7 +2,7 @@
 
 Long-term memory for [Hermes Agent](https://hermes-agent.nousresearch.com), stored as plain markdown files.
 
-Each memory is one note in a folder you choose. Before every turn, Memory Stem recalls up to four relevant notes. The agent saves and corrects memories through tools. Nothing is captured automatically.
+Each memory is one note in a folder you choose. Before every turn, Memory Stem recalls up to four relevant notes. The agent saves and corrects memories through tools; nothing is captured from the chat automatically.
 
 ## Install
 
@@ -51,9 +51,9 @@ Optional files in the memory folder. Edits take effect on the next turn.
 | `ms_forget` | Hide a memory from recall. The file is kept |
 | `ms_verify` | Mark a memory as confirmed still true today. Recall shows it "as of" that date |
 
-`ms_remember` and `ms_draft` accept `tags`, `expires` (YYYY-MM-DD), `questions` (phrasings that should find the note), `basis` (where the fact came from) and `about` (people, places or things the note concerns). A note tagged `event` with an `expires` date is recalled once a day in the two weeks before it expires, and otherwise only when search matches.
+A note tagged `event` with an `expires` date shows up once a day in the two weeks before it expires, even when nothing in the chat matches it.
 
-Generated files, never edited by hand: `Index.md` (every current memory) and `About/<subject>.md` (one page per `about` subject, so Obsidian's graph links related notes). Recall counts live in the runtime data dir as `usage.json`; `python -m memory_stem.usage` lists the most recalled memories and the ones unused for 30 days.
+Memory Stem regenerates `Index.md` (every current memory) and `About/<subject>.md` (one page per `about` subject, so Obsidian's graph links related notes). Don't edit them by hand.
 
 ## Note format
 
@@ -73,13 +73,7 @@ Notes are the source of truth. The search index (SQLite plus local [fastembed](h
 
 ## Development
 
-```sh
-cd ~/.hermes/plugins
-uv run --no-project --with fastembed --with numpy \
-  python -m unittest discover -s memory_stem/tests -t .
-```
-
-Recall evals read personal question sets from `$VAULT_MEMORY_DIR/_evals/` and run with `python -m memory_stem.evaluate [--heldout]`.
+Commands, layout and the rules for changes are in [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
