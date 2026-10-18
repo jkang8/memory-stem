@@ -104,7 +104,7 @@ class VaultMemoryProvider(MemoryProvider):
     def prefetch(self, query: str, *, session_id: str = "") -> str:
         self._status = None
         self._last_query, self._last_recalled = query or "", set()
-        if is_trivial_prompt(query) or self._tools is None or self._settings is None:
+        if is_trivial_prompt(query) or self._tools is None or self._settings is None:  # settings is set with tools; this narrows its type
             return ""
         try:
             self._refresh()
