@@ -1,0 +1,16 @@
+# Lint only for now: `ruff format` would rewrite most files and collide with open PRs, so it comes in its own PR.
+target-version = "py312"
+line-length = 160
+extend-exclude = ["scripts"]  # scripts/ is changed by open PRs; lint it once they merge
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF", "S"]
+# house style: stop-word lists read better as one split string; short local lambdas and try/except/pass are fine.
+# S610 is Django's QuerySet.extra(); there is no Django here, and it misfires on timewindow.extra().
+ignore = ["SIM905", "E731", "SIM105", "S110", "S610"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]  # tests assert, including to narrow Optional types
+
+[lint.isort]
+known-first-party = ["memory_stem"]  # the checkout folder may be named after a branch; don't guess from it

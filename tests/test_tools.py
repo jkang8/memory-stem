@@ -66,8 +66,10 @@ if __name__ == "__main__":
 
 class BasisTest(unittest.TestCase):
     def test_basis_round_trips_and_drafts_default_to_inferred(self):
-        import tempfile, json
+        import json
+        import tempfile
         from pathlib import Path
+
         from memory_stem.notes import NoteStore
         d = tempfile.mkdtemp()
         store, t = make(d)

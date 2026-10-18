@@ -38,14 +38,15 @@ if __name__ == "__main__":
 class UpcomingTest(unittest.TestCase):
     def test_only_near_future_events_surface_in_date_order(self):
         import datetime as dt
+
         from memory_stem.notes import NoteStore
         d = Path(tempfile.mkdtemp())
         st = NoteStore(d)
         t = dt.date.today()
         day = lambda n: (t + dt.timedelta(n)).isoformat()  # relative: active() checks expiry against the real clock
         far = st.add("Trip to Tokyo in March.", title="tokyo", tags=("event",), expires=day(150))
-        soon = st.add("Gala Saturday 6pm.", title="gala", tags=("event",), expires=day(3))
-        sooner = st.add("Taxes due today.", title="taxes", tags=("event",), expires=day(1))
+        st.add("Gala Saturday 6pm.", title="gala", tags=("event",), expires=day(3))
+        st.add("Taxes due today.", title="taxes", tags=("event",), expires=day(1))
         st.add("Not an event but dated.", title="plain", expires=day(2))
         got = [n.title for n in provider.upcoming(st.all(), today=t)]
         self.assertEqual(got, ["taxes", "gala"])
@@ -78,6 +79,7 @@ class HabituateTest(unittest.TestCase):
 
     def test_when_counts_to_the_event_not_expires(self):
         import datetime as dt
+
         from memory_stem.recall import when
         d17 = dt.date(2026, 10, 17)
         self.assertEqual(when("2026-10-18", d17), "today")

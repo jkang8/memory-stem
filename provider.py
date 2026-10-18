@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from typing import Any, Optional
+from typing import Any
 
 from agent.memory_provider import MemoryProvider, RecallStatus, is_trivial_prompt
 
@@ -13,10 +13,10 @@ from .config import ConfigError, Settings, load_settings
 from .embedder import make_embedder
 from .index import Index
 from .notes import NoteStore
+from .recall import MAX_ITEMS, contentless, habituate, profile, seen_path, status_label, upcoming, when
 from .search import Searcher
 from .sources import Recall
 from .tools import SCHEMAS, Tools
-from .recall import MAX_ITEMS, status_label, contentless, habituate, profile, seen_path, upcoming, when
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class VaultMemoryProvider(MemoryProvider):
         self._settings = settings
         self._lock = threading.Lock()
         self._fp = None
-        self._status: Optional[RecallStatus] = None
+        self._status: RecallStatus | None = None
         self._tools: Tools | None = None
         self._primary = True
 
@@ -104,7 +104,7 @@ class VaultMemoryProvider(MemoryProvider):
     def prefetch(self, query: str, *, session_id: str = "") -> str:
         self._status = None
         self._last_query, self._last_recalled = query or "", set()
-        if is_trivial_prompt(query) or self._tools is None:
+        if is_trivial_prompt(query) or self._tools is None or self._settings is None:  # settings is set with tools; this narrows its type
             return ""
         try:
             self._refresh()
@@ -159,7 +159,7 @@ class VaultMemoryProvider(MemoryProvider):
         self._status = RecallStatus(status_label(titles), len(lines))
         return "Possibly relevant saved notes (verify dated facts before relying on them):\n" + "\n".join(lines)
 
-    def recall_status(self) -> Optional[RecallStatus]:
+    def recall_status(self) -> RecallStatus | None:
         return self._status
 
     def sync_turn(self, user_content: str, assistant_content: str, **kwargs) -> None:

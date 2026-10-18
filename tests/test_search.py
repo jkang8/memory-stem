@@ -97,7 +97,7 @@ class SearchTest(unittest.TestCase):
         self.assertEqual(idx.sync(store.all()), (1, 0))
 
     def test_index_rebuilds_after_deletion(self):
-        store, idx, s = build(self.tmp.name, FakeEmbedder())
+        store, idx, _s = build(self.tmp.name, FakeEmbedder())
         a = store.add("Harbor Inn is booked.", title="trip")
         idx.sync(store.all())
         (Path(self.tmp.name) / "i.sqlite").unlink()
@@ -120,6 +120,7 @@ class SearchTest(unittest.TestCase):
         store, idx, s = build(self.tmp.name, Embedder())
         n = store.add("Hotel is Harbor Inn.", title="trip")
         idx.sync(store.all())
+        assert n.path is not None
         text = n.path.read_text().replace("Harbor Inn", "Lakeside Lodge")
         n.path.write_text(text)
         import os

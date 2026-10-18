@@ -7,7 +7,7 @@ import datetime as dt
 import re
 
 from .config import load_settings
-from .notes import NoteStore, Note
+from .notes import Note, NoteStore
 
 _MONTHS = {m: i for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split(), 1)}
 _ISO = re.compile(r"\b(20\d\d)-(\d\d)-(\d\d)\b")

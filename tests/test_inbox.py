@@ -51,7 +51,7 @@ class InboxTest(unittest.TestCase):
         self.assertEqual(len(self.call(t, "ms_search", query="fact")["results"]), 2)
 
     def test_reject_deletes_draft(self):
-        store, _, t = make(self.tmp.name)
+        _store, _, t = make(self.tmp.name)
         d = self.call(t, "ms_draft", content="Wrong guess.", title="w")
         self.call(t, "ms_review", action="reject", id=d["id"])
         self.assertFalse((Path(self.tmp.name) / "Memory/_inbox/w.md").exists())
@@ -67,7 +67,7 @@ class InboxTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in self.call(t, "ms_search", query="return flight")["results"]], [d["id"]])
 
     def test_draft_moved_by_hand_still_retires_old(self):
-        store, _, t = make(self.tmp.name)
+        _store, _, t = make(self.tmp.name)
         old = self.call(t, "ms_remember", content="Return flight Oct 25.", title="ret")
         d = self.call(t, "ms_draft", content="Return flight Oct 24.", title="ret2", supersedes=old["id"])
         (Path(self.tmp.name) / "Memory/_inbox/ret2.md").rename(Path(self.tmp.name) / "Memory/ret2.md")
@@ -83,7 +83,7 @@ class InboxTest(unittest.TestCase):
         self.assertFalse(self.call(t, "ms_review", action="explode")["ok"])
 
     def test_read_only_context_can_draft_but_not_approve(self):
-        store, _, t = make(self.tmp.name, writable=False)
+        _store, _, t = make(self.tmp.name, writable=False)
         d = self.call(t, "ms_draft", content="Cron noticed a thing.", title="c")
         self.assertTrue(d["ok"])
         self.assertFalse(self.call(t, "ms_review", action="approve", id=d["id"])["ok"])

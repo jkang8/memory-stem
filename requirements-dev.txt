@@ -1,0 +1,4 @@
+# Dev and CI tools only; the plugin itself needs nothing beyond what Hermes provides (plus fastembed, numpy).
+numpy==2.5.4
+ruff==0.17.1
+pyright==1.1.414

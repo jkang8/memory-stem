@@ -48,7 +48,7 @@ class CatalogTest(unittest.TestCase):
 
     def test_long_first_line_is_truncated(self):
         self.store.add("word " * 60, title="Long")
-        line = [ln for ln in catalog.render(self.store.all()).splitlines() if "[[Long]]" in ln][0]
+        line = next(ln for ln in catalog.render(self.store.all()).splitlines() if "[[Long]]" in ln)
         self.assertTrue(line.endswith("…"))
         self.assertLess(len(line), 140)
 
@@ -66,6 +66,7 @@ class HubsTest(unittest.TestCase):
     def test_one_page_per_subject_and_stale_pages_removed(self):
         import tempfile
         from pathlib import Path
+
         from memory_stem import catalog
         from memory_stem.notes import NoteStore
         d = Path(tempfile.mkdtemp())

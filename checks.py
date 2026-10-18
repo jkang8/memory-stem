@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 
 _STOP = frozenset("that this with from have about when what which where your into they them their there were been also than "
                   "only more most just like some such then very will would should could does john john's".split())

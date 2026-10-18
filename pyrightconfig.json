@@ -1,0 +1,36 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "scripts",
+    "typings",
+    "**/__pycache__"
+  ],
+  "extraPaths": [
+    ".."
+  ],
+  "stubPath": "typings",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "executionEnvironments": [
+    {
+      "root": "tests",
+      "extraPaths": [
+        ".."
+      ],
+      "reportOptionalMemberAccess": false,
+      "reportAttributeAccessIssue": false
+    },
+    {
+      "root": ".",
+      "extraPaths": [
+        ".."
+      ]
+    }
+  ],
+  "reportMissingModuleSource": false,
+  "strict": [
+    "aliases.py"
+  ]
+}
