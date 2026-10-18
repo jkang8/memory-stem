@@ -1,7 +1,7 @@
 #!/bin/sh
 # Quality gate for a Memory Stem change. Run from a checkout (worktree) of the repo; exits non-zero on any failure.
 #   scripts/gate.sh [baseline_ref]      baseline defaults to origin/main
-# 1. unit tests  2. privacy guard  3. real-vault recall evals vs the baseline (local only: evals quote the owner's life).
+# 1. unit tests  2. privacy guard and doc check  3. real-vault recall evals vs the baseline (local only: evals quote the owner's life).
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${1:-origin/main}"
@@ -27,6 +27,9 @@ grep -q "^OK" "$WORK/t" || { echo "GATE FAIL: tests"; exit 1; }
 
 echo "== privacy guard"
 "$PY" "$REPO/scripts/privacy_guard.py" "$REPO" || { echo "GATE FAIL: privacy"; exit 1; }
+
+echo "== doc check"
+"$PY" "$REPO/scripts/doc_check.py" "$REPO" || { echo "GATE FAIL: docs"; exit 1; }
 
 score() { # $1 dir, $2 flag -> prints "right total junk"
   run "$1" python -W ignore -c "

@@ -26,3 +26,5 @@ jobs:
             export MEMORY_STEM_DENYLIST="$RUNNER_TEMP/denylist.txt"
           fi
           python memory_stem/scripts/privacy_guard.py memory_stem
+      - name: Doc check (line budgets, stale references)
+        run: python memory_stem/scripts/doc_check.py memory_stem
