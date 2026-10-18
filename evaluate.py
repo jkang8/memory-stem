@@ -16,6 +16,7 @@ from .config import Settings, load_settings
 from .embedder import make_embedder
 from .index import Index
 from .notes import NoteStore
+from .recall import contentless
 from .search import Searcher
 from .sources import Recall
 
@@ -72,6 +73,11 @@ def _bench() -> tuple[Settings, NoteStore, Recall, Searcher]:
     return s, store, rec, Searcher.from_settings(s, idx, emb)
 
 
+def _recall(sr: Searcher, query: str, k: int) -> list:
+    """What live recall would search: the provider skips contentless messages (pasted codes, 'go on'), so the evals do too."""
+    return [] if contentless(query) else sr.search(query, k)
+
+
 def run(verbose: bool = True) -> dict:
     warnings.filterwarnings("ignore")
     cases, junk_qs = tuned()
@@ -79,13 +85,13 @@ def run(verbose: bool = True) -> dict:
     s, _, rec, sr = _bench()
     right, sizes, misses = 0, [], []
     for q, must in cases:
-        bodies = [n.body for h in sr.search(q, s.top_k) if (n := rec.get(h.id))]
+        bodies = [n.body for h in _recall(sr, q, s.top_k) if (n := rec.get(h.id))]
         sizes.append(len(bodies))
         if any(must.lower() in b.lower() for b in bodies):
             right += 1
         else:
             misses.append(q)
-    junk = sum(1 for q in junk_qs if sr.search(q, s.top_k))
+    junk = sum(1 for q in junk_qs if _recall(sr, q, s.top_k))
     out = {"notes": len(rec.all()), "recall": f"{right}/{len(cases)}", "avg_hits": round(sum(sizes) / len(sizes), 2),
            "junk_returned": f"{junk}/{len(junk_qs)}", "misses": misses, "ok": right >= len(cases) - 1 and junk == 0}
     if verbose:
@@ -104,11 +110,11 @@ def run_heldout(name: str = "heldout.json") -> dict:
     right, miss = 0, []
     live_cases = [(q, m) for q, m in data["cases"] if m not in bad]  # retired: the fact changed, so the case no longer has an answer
     for q, must in live_cases:
-        if any((n := rec.get(h.id)) and must.lower() in n.body.lower() for h in sr.search(q, s.top_k)):
+        if any((n := rec.get(h.id)) and must.lower() in n.body.lower() for h in _recall(sr, q, s.top_k)):
             right += 1
         else:
             miss.append(q)
-    junk = [q for q in data["junk"] if sr.search(q, s.top_k)]
+    junk = [q for q in data["junk"] if _recall(sr, q, s.top_k)]
     return {"recall": f"{right}/{len(live_cases)}", "retired": len(data["cases"]) - len(live_cases),
             "junk_returned": f"{len(junk)}/{len(data['junk'])}", "misses": miss, "junk": junk, "bad_cases": bad}
 
@@ -125,7 +131,7 @@ def run_ids(name: str) -> dict:
     miss = []
     for c in data:
         src = c["id"].split(":", 1)[0] if ":" in c["id"] else "memory"
-        got = [h.id for h in sr.search(c["question"], s.top_k)]
+        got = [h.id for h in _recall(sr, c["question"], s.top_k)]
         ok = c["id"] in got
         per.setdefault(src, [0, 0])
         per[src][0] += ok

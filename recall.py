@@ -16,10 +16,22 @@ both all them no nope nah wait hmm hm oh ah lol haha in on of at for with up out
 it's its we're were there here what one's ones""".split())
 
 
+_URL = re.compile(r"\b(?:https?://|www\.)\S+", re.I)
+
+
+def _code_like(token: str) -> bool:
+    """A pasted code, token, hash or base64 string, or a `#state` fragment: no words a note could share."""
+    t = token.strip(".,;:!?()[]'\"<>")
+    if len(t) > 1 and t.startswith("#"):
+        return True
+    return len(t) >= 12 and bool(re.search(r"\d|[=/+%&?]", t) or (re.search(r".[A-Z]", t) and re.search(r"[a-z]", t)))
+
+
 def contentless(text: str) -> bool:
-    """A reply that only says 'go on' ("Let's go", "Approve", "?"): searching it recalls noise, so skip search.
-    Upcoming events still show. Anything with one real word (a name, a noun, a number) still searches."""
-    words = re.findall(r"[a-z0-9']+", (text or "").lower())
+    """A reply that only says 'go on' ("Let's go", "Approve", "?") or only pastes a code or URL: searching it recalls
+    noise, so skip search. Upcoming events still show. Anything with one real word (a name, a noun, a number) still searches."""
+    kept = " ".join(t for t in _URL.sub(" ", text or "").split() if not _code_like(t))
+    words = re.findall(r"[a-z0-9']+", kept.lower())
     return not [w for w in words if w not in _FILLER and len(w) > 1]
 
 

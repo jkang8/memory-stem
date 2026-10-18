@@ -64,6 +64,26 @@ class ContentlessTest(unittest.TestCase):
             self.assertFalse(provider.contentless(s), s)
 
 
+class ContentlessCodesTest(unittest.TestCase):
+    def test_pasted_codes_urls_and_hashes_skip_search(self):
+        skip = [
+            "4/0AeanS0ZqX8vLk2mTq9Rw7yHb3NcPdUe5FgJhKs1LmNoPq-rStUvWxYz0123AbCdEf",  # OAuth code
+            "http://localhost:8080/callback?code=4/0AeanS0ZqX8vLk2m&scope=email%20openid&state=a1b2c3d4e5#state",
+            "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",  # sha256
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0",  # base64 / JWT
+            "code=4/0AeanS0ZqX8vLk2m&state=a1b2c3d4e5",
+            "#state",
+            "ok 4/0AeanS0ZqX8vLk2mTq9Rw7yHb3Nc",
+            "https://example.com/oauth?x=1",
+        ]
+        keep = ["Where is order 113-4455667-8899001", "Look up tracking 1Z999AA10123456784", "relationship counseling notes",
+                "iPhone 15 battery", "Taxes due 2026-04-15", "what is at https://example.com/pricing for the plan"]
+        for s in skip:
+            self.assertTrue(provider.contentless(s), s)
+        for s in keep:
+            self.assertFalse(provider.contentless(s), s)
+
+
 class HabituateTest(unittest.TestCase):
     def test_once_a_day_even_when_close(self):
         import datetime as dt

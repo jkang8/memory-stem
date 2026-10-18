@@ -69,7 +69,7 @@ questions: [Where am I staying?]
 Hotel is Harbor Inn, Oct 18-24.
 ```
 
-Notes are the source of truth. The search index (SQLite plus local [fastembed](https://github.com/qdrant/fastembed) embeddings) is a cache and rebuilds from the files. Files that look like credentials are never indexed.
+Notes are the source of truth. The search index (SQLite plus local [fastembed](https://github.com/qdrant/fastembed) embeddings) is a cache and rebuilds from the files. Files that look like credentials are never indexed, and neither are vault pages with no prose (link indexes, Dataview dashboards, lists of IDs). Pasting only a code, token or URL recalls nothing.
 
 ## Development
 
