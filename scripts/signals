@@ -1,0 +1,10 @@
+#!/bin/sh
+# Print Memory Stem's weak spots, for choosing the next foundational fix (see IMPROVE.md).
+#   scripts/signals --vault <notes folder> --hermes-home <Hermes data folder>
+# Needs uv on PATH. The output quotes personal data from the tuned evals: read it, never paste it.
+set -u
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+command -v uv >/dev/null || { echo "signals: uv not found on PATH" >&2; exit 2; }
+WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
+ln -s "$REPO" "$WORK/memory_stem"  # the package must import as memory_stem, whatever the checkout folder is called
+PYTHONPATH="$WORK" uv run -q --no-project --with fastembed --with numpy python -W ignore "$REPO/scripts/signals.py" "$@"
