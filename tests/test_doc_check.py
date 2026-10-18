@@ -41,6 +41,10 @@ class StaleReferenceTest(unittest.TestCase):
         root = repo({"scripts/gate.sh": "", "README.md": "```sh\nscripts/missing.sh --flag\n```\n"})
         self.assertEqual(doc_check.check(root), ["README.md:2: `scripts/missing.sh` does not exist"])
 
+    def test_bare_names_resolve_next_to_the_doc_or_at_the_root(self):
+        root = repo({"notes.py": "", "scripts/run.sh": "", "scripts/run.md": "`run.sh` uses `notes.py`, not `gone.sh`.\n"})
+        self.assertEqual(doc_check.check(root), ["scripts/run.md:1: `gone.sh` does not exist"])
+
     def test_a_folder_not_in_the_repo_is_treated_as_outside_it(self):
         # known gap: if a whole top-level folder is deleted, paths under it are no longer checked
         self.assertEqual(doc_check.check(repo({"README.md": "See `Memory/_evals/tuned.json`.\n"})), [])

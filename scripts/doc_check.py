@@ -2,7 +2,8 @@
 
 - Line budgets (BUDGETS): over budget means cut, not raise the cap.
 - Stale references: repo paths in code spans or fenced blocks, and `python -m memory_stem.<module>` anywhere,
-  must exist. A path counts as a repo path when its first folder is in the repo, or it is a bare .py/.sh name;
+  must exist. A path counts as a repo path when its first folder is in the repo, or it is a bare .py/.sh name
+  (found at the root or next to the doc);
   vault files, ~ and $ paths and globs are outside the repo and are skipped.
 usage: python scripts/doc_check.py [repo_dir]
 """
@@ -34,12 +35,15 @@ def over_budget(root: Path) -> list[str]:
     return out
 
 
-def _exists(root: Path, ref: str) -> bool:
-    p = root / ref
-    if p.exists():
-        return True
-    stem, _, _symbol = ref.rpartition(".")  # tests/helpers.FakeEmbedder -> tests/helpers.py
-    return bool(stem) and (root / (stem + ".py")).exists()
+def _exists(root: Path, ref: str, here: Path) -> bool:
+    """A bare name may sit next to the doc that names it; a path is from the repo root."""
+    for base in (root, here) if "/" not in ref else (root,):
+        if (base / ref).exists():
+            return True
+        stem, _, _symbol = ref.rpartition(".")  # tests/helpers.FakeEmbedder -> tests/helpers.py
+        if stem and (base / (stem + ".py")).exists():
+            return True
+    return False
 
 
 def _repo_path(root: Path, token: str) -> str | None:
@@ -67,7 +71,7 @@ def stale(root: Path) -> list[str]:
             code = line.split() if fenced else [w for span in SPAN.findall(line) for w in span.split()]
             for token in dict.fromkeys(code):
                 ref = _repo_path(root, token)
-                if ref and not _exists(root, ref):
+                if ref and not _exists(root, ref, doc.parent):
                     out.append(f"{name}:{n}: `{ref}` does not exist")
     return out
 
