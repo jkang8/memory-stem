@@ -12,11 +12,10 @@ import tempfile
 import warnings
 from pathlib import Path
 
-from .config import load_settings
+from .config import Settings, load_settings
 from .embedder import make_embedder
 from .index import Index
 from .notes import NoteStore
-from . import aliases
 from .search import Searcher
 from .recall import Recall
 
@@ -61,17 +60,22 @@ def _scratch_index(s, emb) -> Index:
     return Index(p, emb)
 
 
-def run(verbose: bool = True) -> dict:
-    warnings.filterwarnings("ignore")
-    cases, junk_qs = tuned()
-    cases = cases + logged()
+def _bench() -> tuple[Settings, NoteStore, Recall, Searcher]:
+    """The live configuration over a scratch copy of the index, synced to the current notes."""
     s = load_settings()
     store = NoteStore(s.notes_dir)
     emb = make_embedder(s.model_name, s.model_cache)
     idx = _scratch_index(s, emb)
     rec = Recall(store, s.vault_dir)
     idx.sync(rec.all())
-    sr = Searcher(idx, emb, s.min_cosine, strong_cosine=s.strong_cosine, rel_margin=s.rel_margin, vault_penalty=s.vault_penalty, aliases=aliases.load(s.notes_dir))
+    return s, store, rec, Searcher.from_settings(s, idx, emb)
+
+
+def run(verbose: bool = True) -> dict:
+    warnings.filterwarnings("ignore")
+    cases, junk_qs = tuned()
+    cases = cases + logged()
+    s, _, rec, sr = _bench()
     right, sizes, misses = 0, [], []
     for q, must in cases:
         bodies = [rec.get(h.id).body for h in sr.search(q, s.top_k)]
@@ -93,13 +97,7 @@ def run_heldout(name: str = "heldout.json") -> dict:
     """Frozen paraphrase questions written before any scoring (heldout.json). Never tune thresholds or wording against these."""
     warnings.filterwarnings("ignore")
     data = json.loads(_evals(name).read_text())
-    s = load_settings()
-    store = NoteStore(s.notes_dir)
-    emb = make_embedder(s.model_name, s.model_cache)
-    idx = _scratch_index(s, emb)
-    rec = Recall(store, s.vault_dir)
-    idx.sync(rec.all())
-    sr = Searcher(idx, emb, s.min_cosine, strong_cosine=s.strong_cosine, rel_margin=s.rel_margin, vault_penalty=s.vault_penalty, aliases=aliases.load(s.notes_dir))
+    s, store, rec, sr = _bench()
     live = [n.body.lower() for n in store.all() if n.active()]
     bad = [m for _, m in data["cases"] if not any(m.lower() in b for b in live)]  # my case is wrong, not recall
     right, miss = 0, []
@@ -120,12 +118,7 @@ def run_ids(name: str) -> dict:
     warnings.filterwarnings("ignore")
     p = Path(name)
     data = json.loads((p if p.exists() else _evals(p.name)).read_text())  # bare name = file in Memory/_evals
-    s = load_settings()
-    emb = make_embedder(s.model_name, s.model_cache)
-    idx = _scratch_index(s, emb)
-    rec = Recall(NoteStore(s.notes_dir), s.vault_dir)
-    idx.sync(rec.all())
-    sr = Searcher(idx, emb, s.min_cosine, strong_cosine=s.strong_cosine, rel_margin=s.rel_margin, vault_penalty=s.vault_penalty, aliases=aliases.load(s.notes_dir))
+    s, _, rec, sr = _bench()
     known = {n.id for n in rec.all()}
     per: dict[str, list[int]] = {}
     miss = []
